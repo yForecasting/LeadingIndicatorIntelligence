@@ -13,7 +13,7 @@ from tslearn.clustering import TimeSeriesKMeans
 from sklearn.cluster import KMeans
 from collections import Counter
 from sklearn.decomposition import PCA
-
+from statistics import variance, stdev, mean
 csv = pd.read_csv("monthly_data.csv")
 csv = csv.drop("date", axis=1)
 
@@ -24,7 +24,6 @@ def nan_counter(list_of_series):
         series = list_of_series[series]
         if series.isnull().sum().sum() > 0:
             nan_polluted_series_counter += 1
-    print(nan_polluted_series_counter)
 
 
 csv.interpolate(limit_direction="both", inplace=True)
@@ -61,7 +60,6 @@ def plot_som_series_dba_center(som_x, som_y, win_map):
     plt.show()
 
 win_map = som.win_map(csv)
-plot_som_series_dba_center(som_x,som_y, win_map)
 
 cluster_c = []
 cluster_n = []
@@ -80,16 +78,27 @@ for x in range(som_x):
 cluster_map = []
 i = 0
 cluster_x = []
+cluster_dict = {}
 for idx in names:
     winner_node = som.winner(csv[i])
-    cluster_map.append((idx, f"Cluster {winner_node[0] * som_y + winner_node[1] + 1}"))
     name = f"Cluster {winner_node[0] * som_y + winner_node[1] + 1}"
+    cluster_map.append((idx, name))
+
     cluster_x.append(name)
     i += 1
 
 cluster_x = Counter(cluster_x)
-print(pd.DataFrame(cluster_map, columns=["Series", "Cluster"]).sort_values(by="Cluster").set_index("Series"))
+clusters = pd.DataFrame(cluster_map, columns=["Name", "Cluster"]).sort_values(by="Cluster").set_index("Cluster")
+print(clusters)
 plt.figure(figsize=(25, 5))
 plt.title("Number of data columns in each cluster")
 plt.bar(cluster_x.keys(), cluster_x.values())
 plt.show()
+datas = []
+means = []
+for name in clusters.loc[cluster_x.most_common()[0][0]]["Name"].values:
+    data = names[name].values
+    datas += list(data)
+    means.append(mean(list(data)))
+print(stdev(datas))
+print(stdev(means))
